@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# (re)install mapping service directories on webserver and cluster.
+# Is semi-destructive (removes empty directories before installing)
+# so creates a race condition if there are jobs running. So, it's 
+# ill advised to reinstall with jobs in the queue.
+
+#
+CLUSTER_USER=mheiges
+CLUSTER=192.168.149.133
+CLUSTER_PREFIX=/scratch/jcklab/eupath
+RELEASE=5
+SITE=integrate
+
+WEBSERVER_PREFIX=/var/www/Common
+
+
+# standard configuration, normally not changed
+TOP_DIR=orthomcl-mapping-service
+
+###############################################################################
+# FUNCTIONS
+
+function abort() {
+  msg=$1
+  echo
+  echo -e '\E[;31m'"\033[1m$1\033[0m"
+  exit 1
+}
+
+function remote_cmd_without_env() {
+  sshcmd="ssh $CLUSTER_USER@$CLUSTER"
+  $sshcmd $1 >/dev/null 2>&1
+}
+
+
+###############################################################################
+# WEBSERVER
+
+
+WORKDIR="$WEBSERVER_PREFIX/$TOP_DIR/$SITE/work"
+
+# remove empty directories - an attempt to clean up
+# any directory obsolescence without losing any data
+# in the pipeline
+
+mkdir -p "$WORKDIR/$CLUSTER/{results,newJobs}"
+
+mkdir -p "$WORKDIR/$CLUSTER/{phase1,phase2}/{runningJobs,failedJobs}
+
+chmod -R g+rw "$WORKDIR"
+chmod 0777 
+
+###############################################################################
+# CLUSTER
+
+WORKDIR="$WEBSERVER_PREFIX/$TOP_DIR/$SITE/work"
+
+remote_cmd_without_env \
+    "mkdir -p "\"$WORKDIR/$CLUSTER/{results,newJobs}\""
+
+remote_cmd_without_env \
+    "mkdir -p \"$WORKDIR/$CLUSTER/{phase1,phase2}/{runningJobs,failedJobs}\""
+
+remote_cmd_without_env \
+    "chmod -R g+rw \"$WORKDIR\""

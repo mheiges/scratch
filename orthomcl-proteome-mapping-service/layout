@@ -1,0 +1,71 @@
+!! per-website working directory tree so production is distinct from others
+!! separate cluster trees so existing jobs can continue to run after changing clusert conf
+
+# CLUSTER
+
+WORKINGBASE=/scratch/jcklab/eupath/
+RELEASE=5
+SITE=integrate
+
+$WORKINGBASE/orthomcl-mapping-service/
+    db/$RELEASE/
+        proteinSeqs
+        proteinSeqs.phr
+        proteinSeqs.pin
+        proteinSeqs.psq
+    $SITE/
+        gus_home
+        project_home
+        work/
+            rcluster.rcc.uga.edu/
+                results
+                newJobs
+                phase2
+                phase2/runningJobs
+                phase2/failedJobs
+                phase1
+                phase1/runningJobs
+                phase1/failedJobs
+
+    
+
+# WEBSERVER
+
+
+WORKINGBASE=/var/www/Common/
+SITE=integrate
+
+$WORKINGBASE/orthomcl-mapping-service/
+    $SITE/
+        work/
+            rcluster.rcc.uga.edu/
+                results
+                newJobs
+                phase2
+                phase2/runningJobs
+                phase2/failedJobs
+                phase1
+                phase1/runningJobs
+                phase1/failedJobs
+            login.genomics.upenn.edu/
+                results
+                newJobs
+                phase2
+                phase2/runningJobs
+                phase2/failedJobs
+                phase1
+                phase1/runningJobs
+                phase1/failedJobs
+
+
+# defaults to trunk if not set
+BRANCH=orthomclwebsite-5
+
+BRANCHPATH=${BRANCH:+"branches/$BRANCH"}
+BRANCHPATH=${BRANCHPATH:-trunk}
+
+echo $BRANCHPATH
+svn co https://www.cbil.upenn.edu/svn/apidb/ApiCommonWorkflow/$BRANCHPATH ApiCommonWorkflow
+svn co https://www.cbil.upenn.edu/svn/gus/install/trunk install
+svn co https://www.cbil.upenn.edu/svn/gus/DJob/branches/$BRANCHPATH DJob
+svn co https://www.cbil.upenn.edu/svn/gus/CBIL/branches/internal/orthomclwebsite-5 CBIL
