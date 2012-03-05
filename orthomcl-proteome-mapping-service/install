@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 # (re)install mapping service directories on webserver and cluster.
 # Is semi-destructive (removes empty directories before installing)
 # so creates a race condition if there are jobs running. So, it's 
@@ -14,6 +16,7 @@ SITE=integrate
 
 WEBSERVER_PREFIX=/var/www/Common
 
+WS_BLAST_DIR=/var/www/Common/devSiteFilesMirror/webServices/OrthoMCL/release-$RELEASE/blast
 
 # standard configuration, normally not changed
 TOP_DIR=orthomcl-mapping-service
@@ -38,29 +41,38 @@ function remote_cmd_without_env() {
 # WEBSERVER
 
 
-WORKDIR="$WEBSERVER_PREFIX/$TOP_DIR/$SITE/work"
+W_WORKDIR="$WEBSERVER_PREFIX/$TOP_DIR/$SITE/queues"
 
 # remove empty directories - an attempt to clean up
 # any directory obsolescence without losing any data
 # in the pipeline
+find "$WEBSERVER_PREFIX"/"$TOP_DIR"/"$SITE" -depth -type d -empty -exec rmdir {} \;
 
-mkdir -p "$WORKDIR/$CLUSTER/{results,newJobs}"
+mkdir -p "$W_WORKDIR"/"$CLUSTER"/{results,newJobs}
 
-mkdir -p "$WORKDIR/$CLUSTER/{phase1,phase2}/{runningJobs,failedJobs}
+mkdir -p "$W_WORKDIR"/"$CLUSTER"/{phase1,phase2}/{runningJobs,failedJobs}
 
-chmod -R g+rw "$WORKDIR"
-chmod 0777 
+chmod -R g+rw "$W_WORKDIR"
+chmod 0777 "$W_WORKDIR"/"$CLUSTER"/newJobs
 
 ###############################################################################
 # CLUSTER
 
-WORKDIR="$WEBSERVER_PREFIX/$TOP_DIR/$SITE/work"
+C_WORKDIR="$CLUSTER_PREFIX/$TOP_DIR/$SITE/queues"
+C_BLAST_DIR="$CLUSTER_PREFIX/$TOP_DIR/db/release-$RELEASE"
 
 remote_cmd_without_env \
-    "mkdir -p "\"$WORKDIR/$CLUSTER/{results,newJobs}\""
+    "find \"$CLUSTER_PREFIX\"/\"$TOP_DIR\"/\"$SITE\" -depth -type d -empty -exec rmdir {} \\;"
 
 remote_cmd_without_env \
-    "mkdir -p \"$WORKDIR/$CLUSTER/{phase1,phase2}/{runningJobs,failedJobs}\""
+    "mkdir -p \"$C_WORKDIR\"/\"$CLUSTER\"/{results,newJobs}"
 
 remote_cmd_without_env \
-    "chmod -R g+rw \"$WORKDIR\""
+    "mkdir -p \"$C_WORKDIR\"/\"$CLUSTER\"/{phase1,phase2}/{runningJobs,failedJobs}"
+
+remote_cmd_without_env \
+    "chmod -R g+rw \"$C_WORKDIR\""
+    
+remote_cmd_without_env \
+    "mkdir -p \"$C_BLAST_DIR\""
+rsync -a --delete $WS_BLAST_DIR/ $CLUSTER_USER@$CLUSTER:$C_BLAST_DIR

@@ -16,7 +16,7 @@ $WORKINGBASE/orthomcl-mapping-service/
     $SITE/
         gus_home
         project_home
-        work/
+        queues/
             rcluster.rcc.uga.edu/
                 results
                 newJobs
@@ -37,7 +37,7 @@ SITE=integrate
 
 $WORKINGBASE/orthomcl-mapping-service/
     $SITE/
-        work/
+        queues/
             rcluster.rcc.uga.edu/
                 results
                 newJobs
