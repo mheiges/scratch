@@ -1,6 +1,8 @@
 #!/bin/bash
+set -e
+set -o errtrace 
 
-set -x
+trap onerror HUP INT QUIT TERM ERR
 
 # (re)install mapping service directories on webserver and cluster.
 # Is semi-destructive (removes empty directories before installing)
@@ -12,7 +14,7 @@ CLUSTER_USER=mheiges
 CLUSTER=192.168.149.133
 CLUSTER_PREFIX=/scratch/jcklab/eupath
 RELEASE=5
-SITE=integrate
+SITE=integrate.orthomcl.org
 
 WEBSERVER_PREFIX=/var/www/Common
 
@@ -21,21 +23,41 @@ WS_BLAST_DIR=/var/www/Common/devSiteFilesMirror/webServices/OrthoMCL/release-$RE
 # standard configuration, normally not changed
 TOP_DIR=orthomcl-mapping-service
 
+SVN_CO="https://www.cbil.upenn.edu/svn/apidb/ApiCommonWorkflow/branches/orthomclwebsite-5 \
+        https://www.cbil.upenn.edu/svn/gus/CBIL/branches/internal/orthomclwebsite-5 \
+        https://www.cbil.upenn.edu/svn/gus/DJob/branches/orthomclwebsite-5 \
+        https://www.cbil.upenn.edu/svn/gus/install/trunk"
+
 ###############################################################################
 # FUNCTIONS
 
+function onerror() {
+    local status=${1:-$?}
+    echo FAILED with status $status
+    exit $status
+}
+
+
 function abort() {
-  msg=$1
+  local msg=$1
   echo
   echo -e '\E[;31m'"\033[1m$1\033[0m"
   exit 1
 }
 
 function remote_cmd_without_env() {
-  sshcmd="ssh $CLUSTER_USER@$CLUSTER"
-  $sshcmd $1 >/dev/null 2>&1
+  local sshcmd="ssh $CLUSTER_USER@$CLUSTER"
+  $sshcmd "$1" 2>&1
 }
 
+function remote_cmd_with_env() {
+  local sshcmd="ssh $CLUSTER_USER@$CLUSTER"
+  $sshcmd "/bin/bash --rcfile $C_SITE_DIR/setenv -i -c \"$1\"" 2>&1
+}
+
+function logger() {
+  echo "$1"
+}
 
 ###############################################################################
 # WEBSERVER
@@ -45,34 +67,75 @@ W_WORKDIR="$WEBSERVER_PREFIX/$TOP_DIR/$SITE/queues"
 
 # remove empty directories - an attempt to clean up
 # any directory obsolescence without losing any data
-# in the pipeline
-find "$WEBSERVER_PREFIX"/"$TOP_DIR"/"$SITE" -depth -type d -empty -exec rmdir {} \;
+# in the pipeline. queues tree only; will break svn working directories
+logger "cleaning up any empty queue directories before installing"
+test -d "$WEBSERVER_PREFIX"/"$TOP_DIR"/"$SITE"/queues && \
+    find "$WEBSERVER_PREFIX"/"$TOP_DIR"/"$SITE"/queues -depth -type d -empty -exec rmdir {} \;
 
+logger "creating directory tree on webserver"
 mkdir -p "$W_WORKDIR"/"$CLUSTER"/{results,newJobs}
-
 mkdir -p "$W_WORKDIR"/"$CLUSTER"/{phase1,phase2}/{runningJobs,failedJobs}
-
 chmod -R g+rw "$W_WORKDIR"
 chmod 0777 "$W_WORKDIR"/"$CLUSTER"/newJobs
 
 ###############################################################################
 # CLUSTER
 
-C_WORKDIR="$CLUSTER_PREFIX/$TOP_DIR/$SITE/queues"
+C_SITE_DIR="$CLUSTER_PREFIX/$TOP_DIR/$SITE"
 C_BLAST_DIR="$CLUSTER_PREFIX/$TOP_DIR/db/release-$RELEASE"
 
+# dir may not exist but return true anyway so this script doesn't exit due to 'set -e'
 remote_cmd_without_env \
-    "find \"$CLUSTER_PREFIX\"/\"$TOP_DIR\"/\"$SITE\" -depth -type d -empty -exec rmdir {} \\;"
+    "find \"$CLUSTER_PREFIX\"/\"$TOP_DIR\"/\"$SITE\"/queues -depth -type d -empty -exec rmdir {} \\; || true"
+
+logger "making queue directory tree on cluster"
+remote_cmd_without_env \
+    "mkdir -p \"$C_SITE_DIR\"/queues/\"$CLUSTER\"/{results,newJobs}"
 
 remote_cmd_without_env \
-    "mkdir -p \"$C_WORKDIR\"/\"$CLUSTER\"/{results,newJobs}"
+    "mkdir -p \"$C_SITE_DIR\"/queues/\"$CLUSTER\"/{phase1,phase2}/{runningJobs,failedJobs}"
 
-remote_cmd_without_env \
-    "mkdir -p \"$C_WORKDIR\"/\"$CLUSTER\"/{phase1,phase2}/{runningJobs,failedJobs}"
-
-remote_cmd_without_env \
-    "chmod -R g+rw \"$C_WORKDIR\""
     
+# Copy blast data from apiSiteFilesMirror on webserver to cluster
 remote_cmd_without_env \
     "mkdir -p \"$C_BLAST_DIR\""
 rsync -a --delete $WS_BLAST_DIR/ $CLUSTER_USER@$CLUSTER:$C_BLAST_DIR
+
+
+logger "making rcfile, $C_SITE_DIR/setenv"
+remote_cmd_without_env \
+"cat > $C_SITE_DIR/setenv <<EOF
+umask 0007
+export LSB_DEFAULTPROJECT="810086221_jcklab__10-21-RR374-062"
+if [ -e /etc/profile.d/ge.sh ]; then 
+    source /etc/profile.d/ge.sh
+fi
+if [ -e /etc/profile.d/sunge.sh ]; then 
+    source /etc/profile.d/sunge.sh
+fi
+ROOT=$C_SITE_DIR
+export GUS_HOME=\\\$ROOT/gus_home
+export PROJECT_HOME=\\\$ROOT/project_home
+export PATH=$GUS_HOME/bin:\\\$PROJECT_HOME/install/bin:\\\$PATH
+export PERL5LIB=\\\$GUS_HOME/lib/perl
+EOF"
+
+logger "making project and gus homes on cluster"
+remote_cmd_without_env \
+    "mkdir -p \"$C_SITE_DIR\"/{project_home,gus_home/conf}"
+
+logger "checking out source code for cluster"
+for project in $SVN_CO; do \
+    wd=$(IFS='/'; read -a WD <<< "$project"; echo ${WD[5]}); \
+    co_cmd="svn co $project $C_SITE_DIR/project_home/$wd"; \
+    logger "$co_cmd"; \
+#    remote_cmd_with_env "$co_cmd"; \
+done;
+
+
+logger "building..."
+remote_cmd_with_env "echo > \\\$PROJECT_HOME/build.log"
+remote_cmd_with_env "build ApiCommonWorkflow/Main install -append -installConfigFile "
+remote_cmd_with_env "build DJob install -append"
+
+echo Finished. SUCCESS.

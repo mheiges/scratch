@@ -3,11 +3,11 @@
 
 # CLUSTER
 
-WORKINGBASE=/scratch/jcklab/eupath/
+CLUSTER_PREFIX=/scratch/jcklab/eupath/
 RELEASE=5
 SITE=integrate
 
-$WORKINGBASE/orthomcl-mapping-service/
+$CLUSTER_PREFIX/orthomcl-mapping-service/
     db/$RELEASE/
         proteinSeqs
         proteinSeqs.phr
@@ -26,16 +26,25 @@ $WORKINGBASE/orthomcl-mapping-service/
                 phase1
                 phase1/runningJobs
                 phase1/failedJobs
+            login.genomics.upenn.edu/
+                results
+                newJobs
+                phase2
+                phase2/runningJobs
+                phase2/failedJobs
+                phase1
+                phase1/runningJobs
+                phase1/failedJobs
 
     
 
 # WEBSERVER
 
 
-WORKINGBASE=/var/www/Common/
+WEBSERVER_PREFIX=/var/www/Common/
 SITE=integrate
 
-$WORKINGBASE/orthomcl-mapping-service/
+$WEBSERVER_PREFIX/orthomcl-mapping-service/
     $SITE/
         queues/
             rcluster.rcc.uga.edu/
@@ -57,6 +66,11 @@ $WORKINGBASE/orthomcl-mapping-service/
                 phase1/runningJobs
                 phase1/failedJobs
 
+# all sites share the same blast databases for a given release
+# each website has its own project and gus home so divergent svn branches can be used
+# 'queues' directory tree on cluster matches webserver (but not necessarily vice versa).
+    to make it easier to track items in the queue
+    $PREFIX/orthomcl-mapping-service/integrate/queues/zcluster.rcc.uga.edu/newJobs
 
 # defaults to trunk if not set
 BRANCH=orthomclwebsite-5
