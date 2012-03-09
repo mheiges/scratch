@@ -3,33 +3,118 @@ set -e
 set -o errtrace 
 
 trap onerror HUP INT QUIT TERM ERR
+this=`basename $0`
 
 # (re)install mapping service directories on webserver and cluster.
 # Is semi-destructive (removes empty directories before installing)
 # so creates a race condition if there are jobs running. So, it's 
 # ill advised to reinstall with jobs in the queue.
-
 #
-CLUSTER_USER=mheiges
-CLUSTER=192.168.149.133
-CLUSTER_PREFIX=/scratch/jcklab/eupath
-RELEASE=5
-SITE=integrate.orthomcl.org
-
-WEBSERVER_PREFIX=/var/www/Common
-
-WS_BLAST_DIR=/var/www/Common/devSiteFilesMirror/webServices/OrthoMCL/release-$RELEASE/blast
-
-# standard configuration, normally not changed
-TOP_DIR=orthomcl-mapping-service
-
-SVN_CO="https://www.cbil.upenn.edu/svn/apidb/ApiCommonWorkflow/branches/orthomclwebsite-5 \
-        https://www.cbil.upenn.edu/svn/gus/CBIL/branches/internal/orthomclwebsite-5 \
-        https://www.cbil.upenn.edu/svn/gus/DJob/branches/orthomclwebsite-5 \
-        https://www.cbil.upenn.edu/svn/gus/install/trunk"
 
 ###############################################################################
 # FUNCTIONS
+
+write_tmp_prop_file() {
+    # create a sample properties file
+
+    tmpfile="$HOME/${this}_$(date +%y%m%d%H%M%S).prop"
+
+/bin/cat >> $tmpfile <<EOF
+# $(date +%Y/%m/%d\ %H:%M:%S) $USER
+#----------------------------------------------------------------------#
+#       property file for $this                                        #
+#       Format is standard bash variable assignment                    #
+#       (no spaces flanking '=')                                       #
+#----------------------------------------------------------------------#
+
+#
+# SVN_PROJECTS
+# List of svn projects to check out on the cluster. Use full URLs.
+#
+SVN_PROJECTS="https://www.cbil.upenn.edu/svn/apidb/ApiCommonWorkflow/branches/orthomclwebsite-5 \\
+        https://www.cbil.upenn.edu/svn/gus/CBIL/branches/internal/orthomclwebsite-5 \\
+        https://www.cbil.upenn.edu/svn/gus/DJob/branches/orthomclwebsite-5 \\
+        https://www.cbil.upenn.edu/svn/gus/install/trunk"
+
+#
+# CLUSTER_USER
+# The user name on the cluster that will run the BLAST portion of the service.
+#
+CLUSTER_USER=mheiges
+
+#
+# CLUSTER_ADDRESS
+# host name or IP address for cluster. Preferably a real host name, not
+# a Host defined in an ssh config. This is used to ssh to the cluster
+# and a directory tree will be rooted under this name.
+#
+CLUSTER_ADDRESS=192.168.149.133
+
+#
+# CLUSTER_PREFIX_PATH
+# Directory path prefix on the cluster headnode where the service directory tree will 
+# be rooted.
+# This path must exist. The \$TREE_DIR_ROOT_NAME parent directory will be created here.
+#
+CLUSTER_PREFIX_PATH=/scratch/jcklab/eupath
+
+#
+# RELEASE
+# OrthoMCL Release number. Used for BLAST database directory naming.
+#
+RELEASE=5
+
+#
+# WEBSITE_HOSTNAME
+# The name of the website that will be queuing data. Used for directory naming 
+# to keep the queues for multiple websites separate.
+#
+WEBSITE_HOSTNAME=integrate.orthomcl.org
+
+#
+# WEBSERVER_PREFIX_PATH
+# Directory path prefix on the webserver where the service directory tree will be rooted.
+# This path must exist. The \$TREE_DIR_ROOT_NAME parent directory will be created here.
+#
+WEBSERVER_PREFIX_PATH=/var/www/Common
+
+#
+# BLAST_DB_SOURCE
+# Source for pre-formated BLAST databases
+#
+BLAST_DB_SOURCE=/var/www/Common/devSiteFilesMirror/webServices/OrthoMCL/release-\$RELEASE/blast
+
+
+#----------------------------------------------------------------------#
+#                                                                      #
+#   You probably do not need to edit the following properties.         #
+#                                                                      #
+#----------------------------------------------------------------------#
+
+#
+# TREE_DIR_ROOT_NAME
+# Directory name for the service's full directory tree. It will be created
+# as a subdirectory of CLUSTER_PREFIX_PATH and WEBSERVER_PREFIX_PATH
+#
+TREE_DIR_ROOT_NAME=orthomcl-mapping-service
+
+#
+# WEB_BASE_DIR
+# The parent directory for the \$PRODUCT container.
+# For example, \${WEB_BASE_DIR}/\${WEBSITE_HOSTNAME} 
+# might translate to /var/www/integrate.orthomcl.org
+#
+WEB_BASE_DIR=/var/www
+
+
+EOF
+
+    [[ $? -ne 0 ]] && exit 1; 
+
+    echo -n $tmpfile
+
+}
+
 
 function onerror() {
     local status=${1:-$?}
@@ -46,12 +131,12 @@ function abort() {
 }
 
 function remote_cmd_without_env() {
-  local sshcmd="ssh $CLUSTER_USER@$CLUSTER"
+  local sshcmd="ssh $CLUSTER_USER@$CLUSTER_ADDRESS"
   $sshcmd "$1" 2>&1
 }
 
 function remote_cmd_with_env() {
-  local sshcmd="ssh $CLUSTER_USER@$CLUSTER"
+  local sshcmd="ssh $CLUSTER_USER@$CLUSTER_ADDRESS"
   $sshcmd "/bin/bash --rcfile $C_SITE_DIR/setenv -i -c \"$1\"" 2>&1
 }
 
@@ -60,49 +145,84 @@ function logger() {
 }
 
 ###############################################################################
-# WEBSERVER
+
+export PROP_FILE=$1;
+set --
+
+if [[ ! $PROP_FILE || ! -e $PROP_FILE ]]; then
+    echo 
+    echo "Install an OrthoMCL Proteome Mapping Service."
+    echo
+    echo "usage: $this <propfile>"
+    echo
+    echo -n "Shall I create a sample propfile for you?[y/n] "
+        read ans
+        [ "$ans" != "y" ] && exit 1
+    echo
+    tmpfile=`write_tmp_prop_file`
+    ret=$?
+    if [[ $ret -ne 0 ]]; then
+      echo -e "Unable to create propfile. Aborting."
+    else
+      echo -e "I made a sample propfile\n'$tmpfile'\nfor you to edit and feed back to me."      
+    fi
+    exit 1
+fi
 
 
-W_WORKDIR="$WEBSERVER_PREFIX/$TOP_DIR/$SITE/queues"
+src_rslt=`source $PROP_FILE 2>&1`
+if [  "$src_rslt" != "" ]; then
+  echo "<$this> FATAL: $src_rslt"
+  exit 1;
+fi
+
+source $PROP_FILE # previous source is tested in a subshell, out of scope for this script. 
+
+###############################################################################
+# WEBSERVER SETUP
+
+
+W_WORKDIR="$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/$WEBSITE_HOSTNAME/queues"
 
 # remove empty directories - an attempt to clean up
 # any directory obsolescence without losing any data
 # in the pipeline. queues tree only; will break svn working directories
 logger "cleaning up any empty queue directories before installing"
-test -d "$WEBSERVER_PREFIX"/"$TOP_DIR"/"$SITE"/queues && \
-    find "$WEBSERVER_PREFIX"/"$TOP_DIR"/"$SITE"/queues -depth -type d -empty -exec rmdir {} \;
+test -d "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/"$WEBSITE_HOSTNAME"/queues && \
+    find "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/"$WEBSITE_HOSTNAME"/queues -depth -type d -empty -exec rmdir {} \;
 
 logger "creating directory tree on webserver"
-mkdir -p "$W_WORKDIR"/"$CLUSTER"/{results,newJobs}
-mkdir -p "$W_WORKDIR"/"$CLUSTER"/{phase1,phase2}/{runningJobs,failedJobs}
+mkdir -p "$W_WORKDIR"/"$CLUSTER_ADDRESS"/{results,newJobs}
+mkdir -p "$W_WORKDIR"/"$CLUSTER_ADDRESS"/{phase1,phase2}/{runningJobs,failedJobs}
 chmod -R g+rw "$W_WORKDIR"
-chmod 0777 "$W_WORKDIR"/"$CLUSTER"/newJobs
+chmod 0777 "$W_WORKDIR"/"$CLUSTER_ADDRESS"/newJobs
 
 ###############################################################################
-# CLUSTER
+# CLUSTER SETUP
 
-C_SITE_DIR="$CLUSTER_PREFIX/$TOP_DIR/$SITE"
-C_BLAST_DIR="$CLUSTER_PREFIX/$TOP_DIR/db/release-$RELEASE"
+C_SITE_DIR="$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/$WEBSITE_HOSTNAME"
+C_BLAST_DIR="$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/db/release-$RELEASE"
 
 # dir may not exist but return true anyway so this script doesn't exit due to 'set -e'
 remote_cmd_without_env \
-    "find \"$CLUSTER_PREFIX\"/\"$TOP_DIR\"/\"$SITE\"/queues -depth -type d -empty -exec rmdir {} \\; || true"
+    "find \"$CLUSTER_PREFIX_PATH\"/\"$TREE_DIR_ROOT_NAME\"/\"$WEBSITE_HOSTNAME\"/queues/\"$CLUSTER_ADDRESS\" -depth -type d -empty -exec rmdir {} \\; || true"
 
 logger "making queue directory tree on cluster"
 remote_cmd_without_env \
-    "mkdir -p \"$C_SITE_DIR\"/queues/\"$CLUSTER\"/{results,newJobs}"
+    "mkdir -p \"$C_SITE_DIR\"/queues/\"$CLUSTER_ADDRESS\"/{results,newJobs}"
 
 remote_cmd_without_env \
-    "mkdir -p \"$C_SITE_DIR\"/queues/\"$CLUSTER\"/{phase1,phase2}/{runningJobs,failedJobs}"
+    "mkdir -p \"$C_SITE_DIR\"/queues/\"$CLUSTER_ADDRESS\"/{phase1,phase2}/{runningJobs,failedJobs}"
 
-    
+
 # Copy blast data from apiSiteFilesMirror on webserver to cluster
 remote_cmd_without_env \
     "mkdir -p \"$C_BLAST_DIR\""
-rsync -a --delete $WS_BLAST_DIR/ $CLUSTER_USER@$CLUSTER:$C_BLAST_DIR
+rsync -a --delete $BLAST_DB_SOURCE/ $CLUSTER_USER@$CLUSTER_ADDRESS:$C_BLAST_DIR
 
 
-logger "making rcfile, $C_SITE_DIR/setenv"
+# Generate rcfile for cluster
+logger "making rcfile on cluster, $C_SITE_DIR/setenv"
 remote_cmd_without_env \
 "cat > $C_SITE_DIR/setenv <<EOF
 umask 0007
@@ -125,11 +245,11 @@ remote_cmd_without_env \
     "mkdir -p \"$C_SITE_DIR\"/{project_home,gus_home/conf}"
 
 logger "checking out source code for cluster"
-for project in $SVN_CO; do \
+for project in $SVN_PROJECTS; do \
     wd=$(IFS='/'; read -a WD <<< "$project"; echo ${WD[5]}); \
     co_cmd="svn co $project $C_SITE_DIR/project_home/$wd"; \
     logger "$co_cmd"; \
-#    remote_cmd_with_env "$co_cmd"; \
+    remote_cmd_with_env "$co_cmd"; \
 done;
 
 
@@ -138,4 +258,19 @@ remote_cmd_with_env "echo > \\\$PROJECT_HOME/build.log"
 remote_cmd_with_env "build ApiCommonWorkflow/Main install -append -installConfigFile "
 remote_cmd_with_env "build DJob install -append"
 
-echo Finished. SUCCESS.
+cat <<EOF
+Hints for configuring proteomeConfig.txt
+
+resultBaseUrl=http://$WEBSITE_HOSTNAME/cgi-bin/orthomclresult/   
+blastDbFilePath=$C_BLAST_DIR/proteinSeqs
+controlDir=$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME
+resultDir="$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/results
+clusterServerDir=$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/$WEBSITE_HOSTNAME/queues/$CLUSTER_ADDRESS
+clusterUserName=$CLUSTER_USER
+rcfile=$C_SITE_DIR/setenv
+
+For cront setup, run "crontab -e" and add
+*/5 * * * * $WWW_BASE/$WEBSITE_HOSTNAME/gus_home/bin/omupj-cronwrap
+EOF
+
+echo Finished mapping service installation. SUCCESS.
