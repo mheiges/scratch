@@ -8,33 +8,34 @@ RELEASE=5
 SITE=integrate
 
 $CLUSTER_PREFIX/orthomcl-mapping-service/
-    db/$RELEASE/
-        proteinSeqs
-        proteinSeqs.phr
-        proteinSeqs.pin
-        proteinSeqs.psq
-    $SITE/
-        gus_home
-        project_home
-        queues/
-            rcluster.rcc.uga.edu/
-                results
-                newJobs
-                phase2
-                phase2/runningJobs
-                phase2/failedJobs
-                phase1
-                phase1/runningJobs
-                phase1/failedJobs
-            login.genomics.upenn.edu/
-                results
-                newJobs
-                phase2
-                phase2/runningJobs
-                phase2/failedJobs
-                phase1
-                phase1/runningJobs
-                phase1/failedJobs
+    $RELEASE/
+        db/
+            proteinSeqs
+            proteinSeqs.phr
+            proteinSeqs.pin
+            proteinSeqs.psq
+        $SITE/
+            gus_home
+            project_home
+            queues/
+                rcluster.rcc.uga.edu/
+                    results
+                    newJobs
+                    phase2
+                    phase2/runningJobs
+                    phase2/failedJobs
+                    phase1
+                    phase1/runningJobs
+                    phase1/failedJobs
+                login.genomics.upenn.edu/
+                    results
+                    newJobs
+                    phase2
+                    phase2/runningJobs
+                    phase2/failedJobs
+                    phase1
+                    phase1/runningJobs
+                    phase1/failedJobs
 
     
 
@@ -45,41 +46,35 @@ WEBSERVER_PREFIX=/var/www/Common/
 SITE=integrate
 
 $WEBSERVER_PREFIX/orthomcl-mapping-service/
-    $SITE/
-        queues/
-            rcluster.rcc.uga.edu/
-                results
-                newJobs
-                phase2
-                phase2/runningJobs
-                phase2/failedJobs
-                phase1
-                phase1/runningJobs
-                phase1/failedJobs
-            login.genomics.upenn.edu/
-                results
-                newJobs
-                phase2
-                phase2/runningJobs
-                phase2/failedJobs
-                phase1
-                phase1/runningJobs
-                phase1/failedJobs
+    $RELEASE/
+        $SITE/
+            queues/
+                rcluster.rcc.uga.edu/
+                    results
+                    newJobs
+                    phase2
+                    phase2/runningJobs
+                    phase2/failedJobs
+                    phase1
+                    phase1/runningJobs
+                    phase1/failedJobs
+                login.genomics.upenn.edu/
+                    results
+                    newJobs
+                    phase2
+                    phase2/runningJobs
+                    phase2/failedJobs
+                    phase1
+                    phase1/runningJobs
+                    phase1/failedJobs
 
 # all sites share the same blast databases for a given release
 # each website has its own project and gus home so divergent svn branches can be used
 # 'queues' directory tree on cluster matches webserver (but not necessarily vice versa).
     to make it easier to track items in the queue
-    $PREFIX/orthomcl-mapping-service/integrate/queues/zcluster.rcc.uga.edu/newJobs
+    $PREFIX/orthomcl-mapping-service/release-5/integrate/queues/zcluster.rcc.uga.edu/newJobs
 
-# defaults to trunk if not set
-BRANCH=orthomclwebsite-5
-
-BRANCHPATH=${BRANCH:+"branches/$BRANCH"}
-BRANCHPATH=${BRANCHPATH:-trunk}
-
-echo $BRANCHPATH
-svn co https://www.cbil.upenn.edu/svn/apidb/ApiCommonWorkflow/$BRANCHPATH ApiCommonWorkflow
-svn co https://www.cbil.upenn.edu/svn/gus/install/trunk install
-svn co https://www.cbil.upenn.edu/svn/gus/DJob/branches/$BRANCHPATH DJob
-svn co https://www.cbil.upenn.edu/svn/gus/CBIL/branches/internal/orthomclwebsite-5 CBIL
+# use real paths, not symlinks, so jobs in queue from previous release can finish and we
+# can start a new release in parallel
+/var/www/OrthoMCL/orthomcl-5/gus_home/bin/omupj-cronwrap /var/www/OrthoMCL/orthomcl-5/cgi-lib/rcluster.conf
+/var/www/OrthoMCL/orthomcl-6/gus_home/bin/omupj-cronwrap /var/www/OrthoMCL/orthomcl-6/cgi-lib/rcluster.conf

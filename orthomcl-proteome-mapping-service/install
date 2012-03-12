@@ -59,10 +59,10 @@ CLUSTER_ADDRESS=192.168.149.133
 CLUSTER_PREFIX_PATH=/scratch/jcklab/eupath
 
 #
-# RELEASE
+# RELEASE_NO
 # OrthoMCL Release number. Used for BLAST database directory naming.
 #
-RELEASE=5
+RELEASE_NO=5
 
 #
 # WEBSITE_HOSTNAME
@@ -82,7 +82,7 @@ WEBSERVER_PREFIX_PATH=/var/www/Common
 # BLAST_DB_SOURCE
 # Source for pre-formated BLAST databases
 #
-BLAST_DB_SOURCE=/var/www/Common/devSiteFilesMirror/webServices/OrthoMCL/release-\$RELEASE/blast
+BLAST_DB_SOURCE=/var/www/Common/devSiteFilesMirror/webServices/OrthoMCL/release-\$RELEASE_NO/blast
 
 
 #----------------------------------------------------------------------#
@@ -182,14 +182,14 @@ source $PROP_FILE # previous source is tested in a subshell, out of scope for th
 # WEBSERVER SETUP
 
 
-W_WORKDIR="$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/$WEBSITE_HOSTNAME/queues"
+W_WORKDIR="$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/orthomcl-$RELEASE_NO/$WEBSITE_HOSTNAME/queues"
 
 # remove empty directories - an attempt to clean up
 # any directory obsolescence without losing any data
 # in the pipeline. queues tree only; will break svn working directories
 logger "cleaning up any empty queue directories before installing"
-test -d "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/"$WEBSITE_HOSTNAME"/queues && \
-    find "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/"$WEBSITE_HOSTNAME"/queues -depth -type d -empty -exec rmdir {} \;
+test -d "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/"orthomcl-$RELEASE_NO"/"$WEBSITE_HOSTNAME"/queues && \
+    find "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/"orthomcl-$RELEASE_NO"/"$WEBSITE_HOSTNAME"/queues -depth -type d -empty -exec rmdir {} \;
 
 logger "creating directory tree on webserver"
 mkdir -p "$W_WORKDIR"/"$CLUSTER_ADDRESS"/{results,newJobs}
@@ -200,12 +200,12 @@ chmod 0777 "$W_WORKDIR"/"$CLUSTER_ADDRESS"/newJobs
 ###############################################################################
 # CLUSTER SETUP
 
-C_SITE_DIR="$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/$WEBSITE_HOSTNAME"
-C_BLAST_DIR="$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/db/release-$RELEASE"
+C_SITE_DIR="$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/orthomcl-$RELEASE_NO/$WEBSITE_HOSTNAME"
+C_BLAST_DIR="$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/orthomcl-$RELEASE_NO/db"
 
 # dir may not exist but return true anyway so this script doesn't exit due to 'set -e'
 remote_cmd_without_env \
-    "find \"$CLUSTER_PREFIX_PATH\"/\"$TREE_DIR_ROOT_NAME\"/\"$WEBSITE_HOSTNAME\"/queues/\"$CLUSTER_ADDRESS\" -depth -type d -empty -exec rmdir {} \\; || true"
+    "find \"$CLUSTER_PREFIX_PATH\"/\"$TREE_DIR_ROOT_NAME\"/\"orthomcl-$RELEASE_NO\"/\"$WEBSITE_HOSTNAME\"/queues/\"$CLUSTER_ADDRESS\" -depth -type d -empty -exec rmdir {} \\; || true"
 
 logger "making queue directory tree on cluster"
 remote_cmd_without_env \
@@ -216,6 +216,7 @@ remote_cmd_without_env \
 
 
 # Copy blast data from apiSiteFilesMirror on webserver to cluster
+logger "copying BLAST databases to cluster"
 remote_cmd_without_env \
     "mkdir -p \"$C_BLAST_DIR\""
 rsync -a --delete $BLAST_DB_SOURCE/ $CLUSTER_USER@$CLUSTER_ADDRESS:$C_BLAST_DIR
@@ -259,18 +260,20 @@ remote_cmd_with_env "build ApiCommonWorkflow/Main install -append -installConfig
 remote_cmd_with_env "build DJob install -append"
 
 cat <<EOF
-Hints for configuring proteomeConfig.txt
+Copy proteomeJobConfig.txt.sample to proteomeMapping-$CLUSTER_ADDRESS.conf
+
+Hints for configuring proteomeMapping-$CLUSTER_ADDRESS.conf
 
 resultBaseUrl=http://$WEBSITE_HOSTNAME/cgi-bin/orthomclresult/   
 blastDbFilePath=$C_BLAST_DIR/proteinSeqs
 controlDir=$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME
 resultDir="$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/results
-clusterServerDir=$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/$WEBSITE_HOSTNAME/queues/$CLUSTER_ADDRESS
+clusterServerDir=$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/orthomcl-$RELEASE_NO/$WEBSITE_HOSTNAME/queues/$CLUSTER_ADDRESS
 clusterUserName=$CLUSTER_USER
 rcfile=$C_SITE_DIR/setenv
 
-For cront setup, run "crontab -e" and add
-*/5 * * * * $WWW_BASE/$WEBSITE_HOSTNAME/gus_home/bin/omupj-cronwrap
+For cron setup, run "crontab -e" and add something like
+*/5 * * * * $WWW_BASE_DIR/OrthoMCL/orthomcl-$RELEASE_NO/gus_home/bin/omupj-cronwrap $WWW_BASE_DIR/OrthoMCL/orthomcl-$RELEASE_NO/cgi-lib/proteomeMapping-$CLUSTER_ADDRESS.conf
 EOF
 
 echo Finished mapping service installation. SUCCESS.
