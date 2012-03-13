@@ -194,7 +194,7 @@ test -d "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/"orthomcl-$RELEASE_NO"/"$
 logger "creating directory tree on webserver"
 mkdir -p "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/results
 mkdir -p "$W_WORKDIR"/"$CLUSTER_ADDRESS"/newJobs
-mkdir -p "$W_WORKDIR"/"$CLUSTER_ADDRESS"/{phase1,phase2}/{runningJobs,failedJobsinstall_120309151546}
+mkdir -p "$W_WORKDIR"/"$CLUSTER_ADDRESS"/{phase1,phase2}/{runningJobs,failedJobs}
 chmod -R g+rw "$W_WORKDIR"
 chmod 0777 "$W_WORKDIR"/"$CLUSTER_ADDRESS"/newJobs
 
