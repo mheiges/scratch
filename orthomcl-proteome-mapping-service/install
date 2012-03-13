@@ -79,10 +79,10 @@ WEBSITE_HOSTNAME=integrate.orthomcl.org
 WEBSERVER_PREFIX_PATH=/var/www/Common
 
 #
-# BLAST_DB_SOURCE
-# Source for pre-formated BLAST databases
+# BLAST_FASTA_SOURCE
+# Source for OrthoMCL FASTA file to be used for BLAST databases
 #
-BLAST_DB_SOURCE=/var/www/Common/devSiteFilesMirror/webServices/OrthoMCL/release-\$RELEASE_NO/blast
+BLAST_FASTA_SOURCE=/var/www/Common/apiSiteFilesMirror/downloadSite/OrthoMCL/release-\$RELEASE_NO/aa_seqs_OrthoMCL-\$RELEASE_NO.fasta
 
 
 #----------------------------------------------------------------------#
@@ -220,7 +220,7 @@ remote_cmd_without_env \
 logger "copying BLAST databases to cluster"
 remote_cmd_without_env \
     "mkdir -p \"$C_BLAST_DIR\""
-rsync -a --delete $BLAST_DB_SOURCE/ $CLUSTER_USER@$CLUSTER_ADDRESS:$C_BLAST_DIR
+rsync -a $BLAST_FASTA_SOURCE $CLUSTER_USER@$CLUSTER_ADDRESS:$C_BLAST_DIR/
 
 
 # Generate rcfile for cluster
