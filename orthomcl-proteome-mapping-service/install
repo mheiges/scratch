@@ -193,7 +193,7 @@ test -d "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/"orthomcl-$RELEASE_NO"/"$
 
 logger "creating directory tree on webserver"
 mkdir -p "$W_WORKDIR"/"$CLUSTER_ADDRESS"/{results,newJobs}
-mkdir -p "$W_WORKDIR"/"$CLUSTER_ADDRESS"/{phase1,phase2}/{runningJobs,failedJobs}
+mkdir -p "$W_WORKDIR"/"$CLUSTER_ADDRESS"/{phase1,phase2}/{runningJobs,failedJobsinstall_120309151546}
 chmod -R g+rw "$W_WORKDIR"
 chmod 0777 "$W_WORKDIR"/"$CLUSTER_ADDRESS"/newJobs
 
@@ -273,7 +273,7 @@ clusterUserName=$CLUSTER_USER
 rcfile=$C_SITE_DIR/setenv
 
 For cron setup, run "crontab -e" and add something like
-*/5 * * * * $WWW_BASE_DIR/OrthoMCL/orthomcl-$RELEASE_NO/gus_home/bin/omupj-cronwrap $WWW_BASE_DIR/OrthoMCL/orthomcl-$RELEASE_NO/cgi-lib/proteomeMapping-$CLUSTER_ADDRESS.conf
+*/5 * * * * $WEB_BASE_DIR/OrthoMCL/orthomcl-$RELEASE_NO/gus_home/bin/omupj-cronwrap $WWW_BASE_DIR/OrthoMCL/orthomcl-$RELEASE_NO/cgi-lib/proteomeMapping-$CLUSTER_ADDRESS.conf
 EOF
 
 echo Finished mapping service installation. SUCCESS.
