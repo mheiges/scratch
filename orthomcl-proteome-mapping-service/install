@@ -220,7 +220,7 @@ remote_cmd_without_env \
 logger "copying BLAST databases to cluster"
 remote_cmd_without_env \
     "mkdir -p \"$C_BLAST_DIR\""
-rsync -a $BLAST_FASTA_SOURCE $CLUSTER_USER@$CLUSTER_ADDRESS:$C_BLAST_DIR/
+rsync -a $BLAST_FASTA_SOURCE $CLUSTER_USER@$CLUSTER_ADDRESS:$C_BLAST_DIR/proteinSeqs
 
 
 # Generate rcfile for cluster
