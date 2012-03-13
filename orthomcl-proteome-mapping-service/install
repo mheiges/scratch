@@ -181,22 +181,21 @@ source $PROP_FILE # previous source is tested in a subshell, out of scope for th
 ###############################################################################
 # WEBSERVER SETUP
 
-
-W_WORKDIR="$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/orthomcl-$RELEASE_NO/$WEBSITE_HOSTNAME/queues"
+W_WORKDIR="$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/orthomcl-$RELEASE_NO/$WEBSITE_HOSTNAME/queues/$CLUSTER_ADDRESS"
 
 # remove empty directories - an attempt to clean up
 # any directory obsolescence without losing any data
 # in the pipeline. queues tree only; will break svn working directories
 logger "cleaning up any empty queue directories before installing"
-test -d "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/"orthomcl-$RELEASE_NO"/"$WEBSITE_HOSTNAME"/queues && \
-    find "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/"orthomcl-$RELEASE_NO"/"$WEBSITE_HOSTNAME"/queues -depth -type d -empty -exec rmdir {} \;
+test -d "$W_WORKDIR" && \
+    find "$W_WORKDIR" -depth -type d -empty -exec rmdir {} \;
 
 logger "creating directory tree on webserver"
 mkdir -p "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/results
-mkdir -p "$W_WORKDIR"/"$CLUSTER_ADDRESS"/newJobs
-mkdir -p "$W_WORKDIR"/"$CLUSTER_ADDRESS"/{phase1,phase2}/{runningJobs,failedJobs}
+mkdir -p "$W_WORKDIR"/newJobs
+mkdir -p "$W_WORKDIR"/{phase1,phase2}/{runningJobs,failedJobs}
 chmod -R g+rw "$W_WORKDIR"
-chmod 0777 "$W_WORKDIR"/"$CLUSTER_ADDRESS"/newJobs
+chmod 0777 "$W_WORKDIR"/newJobs
 
 ###############################################################################
 # CLUSTER SETUP
@@ -267,7 +266,7 @@ Hints for configuring proteomeMapping-$CLUSTER_ADDRESS.conf
 
 resultBaseUrl=http://$WEBSITE_HOSTNAME/cgi-bin/orthomclresult/   
 blastDbFilePath=$C_BLAST_DIR/proteinSeqs
-controlDir=$W_WORKDIR/$CLUSTER_ADDRESS
+controlDir=$W_WORKDIR
 resultDir=$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/results
 clusterServerDir=$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/orthomcl-$RELEASE_NO/$WEBSITE_HOSTNAME/queues/$CLUSTER_ADDRESS
 nodePath=$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME
