@@ -238,7 +238,7 @@ fi
 ROOT=$C_SITE_DIR
 export GUS_HOME=\\\$ROOT/gus_home
 export PROJECT_HOME=\\\$ROOT/project_home
-export PATH=$GUS_HOME/bin:\\\$PROJECT_HOME/install/bin:\\\$PATH
+export PATH=\\\$GUS_HOME/bin:\\\$PROJECT_HOME/install/bin:\\\$PATH
 export PERL5LIB=\\\$GUS_HOME/lib/perl
 EOF"
 
@@ -268,8 +268,9 @@ Hints for configuring proteomeMapping-$CLUSTER_ADDRESS.conf
 resultBaseUrl=http://$WEBSITE_HOSTNAME/cgi-bin/orthomclresult/   
 blastDbFilePath=$C_BLAST_DIR/proteinSeqs
 controlDir=$W_WORKDIR/$CLUSTER_ADDRESS
-resultDir="$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/results
+resultDir=$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/results
 clusterServerDir=$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/orthomcl-$RELEASE_NO/$WEBSITE_HOSTNAME/queues/$CLUSTER_ADDRESS
+nodePath=$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME
 clusterUserName=$CLUSTER_USER
 rcfile=$C_SITE_DIR/setenv
 
