@@ -80,3 +80,5 @@ $WEBSERVER_PREFIX/orthomcl-mapping-service/
 
 # CHANGING QUEUES
 set proteome_job_dir config.yaml to correct newJobs dir
+validate
+     /var/www/mheiges.orthomcl.org/gus_home/bin/validate-proteomeJobConfig /var/www/mheiges.orthomcl.org/cgi-lib/proteomeMapping-delta.genomics.upenn.edu.conf 
