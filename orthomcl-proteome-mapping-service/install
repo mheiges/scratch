@@ -192,7 +192,8 @@ test -d "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/"orthomcl-$RELEASE_NO"/"$
     find "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/"orthomcl-$RELEASE_NO"/"$WEBSITE_HOSTNAME"/queues -depth -type d -empty -exec rmdir {} \;
 
 logger "creating directory tree on webserver"
-mkdir -p "$W_WORKDIR"/"$CLUSTER_ADDRESS"/{results,newJobs}
+mkdir -p "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/results
+mkdir -p "$W_WORKDIR"/"$CLUSTER_ADDRESS"/newJobs
 mkdir -p "$W_WORKDIR"/"$CLUSTER_ADDRESS"/{phase1,phase2}/{runningJobs,failedJobsinstall_120309151546}
 chmod -R g+rw "$W_WORKDIR"
 chmod 0777 "$W_WORKDIR"/"$CLUSTER_ADDRESS"/newJobs
@@ -209,7 +210,7 @@ remote_cmd_without_env \
 
 logger "making queue directory tree on cluster"
 remote_cmd_without_env \
-    "mkdir -p \"$C_SITE_DIR\"/queues/\"$CLUSTER_ADDRESS\"/{results,newJobs}"
+    "mkdir -p \"$C_SITE_DIR\"/queues/\"$CLUSTER_ADDRESS\"/newJobs"
 
 remote_cmd_without_env \
     "mkdir -p \"$C_SITE_DIR\"/queues/\"$CLUSTER_ADDRESS\"/{phase1,phase2}/{runningJobs,failedJobs}"
@@ -266,7 +267,7 @@ Hints for configuring proteomeMapping-$CLUSTER_ADDRESS.conf
 
 resultBaseUrl=http://$WEBSITE_HOSTNAME/cgi-bin/orthomclresult/   
 blastDbFilePath=$C_BLAST_DIR/proteinSeqs
-controlDir=$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME
+controlDir=$W_WORKDIR/$CLUSTER_ADDRESS
 resultDir="$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/results
 clusterServerDir=$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/orthomcl-$RELEASE_NO/$WEBSITE_HOSTNAME/queues/$CLUSTER_ADDRESS
 clusterUserName=$CLUSTER_USER

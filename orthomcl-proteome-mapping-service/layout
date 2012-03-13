@@ -19,7 +19,6 @@ $CLUSTER_PREFIX/orthomcl-mapping-service/
             project_home
             queues/
                 rcluster.rcc.uga.edu/
-                    results
                     newJobs
                     phase2
                     phase2/runningJobs
@@ -28,7 +27,6 @@ $CLUSTER_PREFIX/orthomcl-mapping-service/
                     phase1/runningJobs
                     phase1/failedJobs
                 login.genomics.upenn.edu/
-                    results
                     newJobs
                     phase2
                     phase2/runningJobs
@@ -46,11 +44,11 @@ WEBSERVER_PREFIX=/var/www/Common/
 SITE=integrate
 
 $WEBSERVER_PREFIX/orthomcl-mapping-service/
+    results
     $RELEASE/
         $SITE/
             queues/
                 rcluster.rcc.uga.edu/
-                    results
                     newJobs
                     phase2
                     phase2/runningJobs
@@ -59,7 +57,6 @@ $WEBSERVER_PREFIX/orthomcl-mapping-service/
                     phase1/runningJobs
                     phase1/failedJobs
                 login.genomics.upenn.edu/
-                    results
                     newJobs
                     phase2
                     phase2/runningJobs
@@ -78,3 +75,8 @@ $WEBSERVER_PREFIX/orthomcl-mapping-service/
 # can start a new release in parallel
 /var/www/OrthoMCL/orthomcl-5/gus_home/bin/omupj-cronwrap /var/www/OrthoMCL/orthomcl-5/cgi-lib/rcluster.conf
 /var/www/OrthoMCL/orthomcl-6/gus_home/bin/omupj-cronwrap /var/www/OrthoMCL/orthomcl-6/cgi-lib/rcluster.conf
+
+# results dir is common outside the $RELEASE dir so it spans releasess
+
+# CHANGING QUEUES
+set proteome_job_dir config.yaml to correct newJobs dir
