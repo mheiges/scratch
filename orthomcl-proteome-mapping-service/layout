@@ -1,3 +1,13 @@
+# The directory structure addresses several requirements. 
+- separate trees for each release so jobs continue to run after a new release (old jobs continue to run through the previous release's queue).
+- for a given release, separate trees for each website so qa and development don't conflict with production
+- each website tree gets its own project and gus homes for independent development
+- for a give website, separate trees for each cluster server. This allows the website to change its cluster usage for new jobs while allowing existing jobs to continue through their original cluster queue.
+- the results directory is shared by every website, every release so download links don't break after a new release. The job ids are unique enough that we don't worry about conflicts.
+
+# Unison is used to keep the results dir consistent between w1 and w2.
+# I don't think we care about keeping the others in sync
+
 !! per-website working directory tree so production is distinct from others
 !! separate cluster trees so existing jobs can continue to run after changing clusert conf
 

@@ -9,7 +9,7 @@ my $JOB_ID = $ARGV[0];
 
 my $JOB_PATH = '.';
 
-my $LOG = "$JOB_ID.log";
+my $LOG = "$JOB_ID";
 
 open (LOG, "<$LOG");
 

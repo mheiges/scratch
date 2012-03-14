@@ -181,7 +181,7 @@ source $PROP_FILE # previous source is tested in a subshell, out of scope for th
 ###############################################################################
 # WEBSERVER SETUP
 
-W_WORKDIR="$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/orthomcl-$RELEASE_NO/$WEBSITE_HOSTNAME/queues/$CLUSTER_ADDRESS"
+W_WORKDIR="$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/release-$RELEASE_NO/$WEBSITE_HOSTNAME/queues/$CLUSTER_ADDRESS"
 
 # remove empty directories - an attempt to clean up
 # any directory obsolescence without losing any data
@@ -190,7 +190,7 @@ logger "cleaning up any empty queue directories before installing"
 test -d "$W_WORKDIR" && \
     find "$W_WORKDIR" -depth -type d -empty -exec rmdir {} \;
 
-logger "creating directory tree on webserver"
+logger "creating directory tree on webserver for $WEBSITE_HOSTNAME"
 mkdir -p "$WEBSERVER_PREFIX_PATH"/"$TREE_DIR_ROOT_NAME"/results
 mkdir -p "$W_WORKDIR"/newJobs
 mkdir -p "$W_WORKDIR"/{phase1,phase2}/{runningJobs,failedJobs}
@@ -200,14 +200,14 @@ chmod 0777 "$W_WORKDIR"/newJobs
 ###############################################################################
 # CLUSTER SETUP
 
-C_SITE_DIR="$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/orthomcl-$RELEASE_NO/$WEBSITE_HOSTNAME"
-C_BLAST_DIR="$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/orthomcl-$RELEASE_NO/db"
+C_SITE_DIR="$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/release-$RELEASE_NO/$WEBSITE_HOSTNAME"
+C_BLAST_DIR="$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/release-$RELEASE_NO/db"
 
 # dir may not exist but return true anyway so this script doesn't exit due to 'set -e'
 remote_cmd_without_env \
-    "find \"$CLUSTER_PREFIX_PATH\"/\"$TREE_DIR_ROOT_NAME\"/\"orthomcl-$RELEASE_NO\"/\"$WEBSITE_HOSTNAME\"/queues/\"$CLUSTER_ADDRESS\" -depth -type d -empty -exec rmdir {} \\; || true"
+    "find \"$CLUSTER_PREFIX_PATH\"/\"$TREE_DIR_ROOT_NAME\"/\"release-$RELEASE_NO\"/\"$WEBSITE_HOSTNAME\"/queues/\"$CLUSTER_ADDRESS\" -depth -type d -empty -exec rmdir {} \\; || true"
 
-logger "making queue directory tree on cluster"
+logger "making queue directory tree on $CLUSTER_ADDRESS"
 remote_cmd_without_env \
     "mkdir -p \"$C_SITE_DIR\"/queues/\"$CLUSTER_ADDRESS\"/newJobs"
 
@@ -216,14 +216,14 @@ remote_cmd_without_env \
 
 
 # Copy blast data from apiSiteFilesMirror on webserver to cluster
-logger "copying BLAST databases to cluster"
+logger "copying BLAST databases to $CLUSTER_ADDRESS"
 remote_cmd_without_env \
     "mkdir -p \"$C_BLAST_DIR\""
 rsync -a $BLAST_FASTA_SOURCE $CLUSTER_USER@$CLUSTER_ADDRESS:$C_BLAST_DIR/proteinSeqs
 
 
 # Generate rcfile for cluster
-logger "making rcfile on cluster, $C_SITE_DIR/setenv"
+logger "making rcfile on $CLUSTER_ADDRESS, $C_SITE_DIR/setenv"
 remote_cmd_without_env \
 "cat > $C_SITE_DIR/setenv <<EOF
 umask 0007
@@ -241,11 +241,11 @@ export PATH=\\\$GUS_HOME/bin:\\\$PROJECT_HOME/install/bin:\\\$PATH
 export PERL5LIB=\\\$GUS_HOME/lib/perl
 EOF"
 
-logger "making project and gus homes on cluster"
+logger "making project and gus homes on $CLUSTER_ADDRESS"
 remote_cmd_without_env \
     "mkdir -p \"$C_SITE_DIR\"/{project_home,gus_home/conf}"
 
-logger "checking out source code for cluster"
+logger "checking out source code for $CLUSTER_ADDRESS"
 for project in $SVN_PROJECTS; do \
     wd=$(IFS='/'; read -a WD <<< "$project"; echo ${WD[5]}); \
     co_cmd="svn co $project $C_SITE_DIR/project_home/$wd"; \
@@ -268,7 +268,7 @@ resultBaseUrl=http://$WEBSITE_HOSTNAME/cgi-bin/orthomclresult/
 blastDbFilePath=$C_BLAST_DIR/proteinSeqs
 controlDir=$W_WORKDIR
 resultDir=$WEBSERVER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/results
-clusterServerDir=$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/orthomcl-$RELEASE_NO/$WEBSITE_HOSTNAME/queues/$CLUSTER_ADDRESS
+clusterServerDir=$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME/release-$RELEASE_NO/$WEBSITE_HOSTNAME/queues/$CLUSTER_ADDRESS
 nodePath=$CLUSTER_PREFIX_PATH/$TREE_DIR_ROOT_NAME
 clusterUserName=$CLUSTER_USER
 rcfile=$C_SITE_DIR/setenv
