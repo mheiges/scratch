@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 
 use strict;
+use Date::Format qw(time2str);
 use Date::Parse;
-use Date::Format;
 use POSIX;
 
 my $JOB_ID = $ARGV[0];
@@ -58,7 +58,7 @@ my $projected_time_remaining;
 $projected_time_remaining .= sprintf "%dh",  $hours   if  $hours;
 $projected_time_remaining .= sprintf " %dm", $minutes if ($minutes or $hours);
 
-my $projected_completion_datetime = time2str($curr_time + $projected_time_remaining);
+my $projected_completion_datetime = time2str('%l:%M%P %a %d %b %Y', $curr_time + $projected_seconds_remaining);
 
 print <<"EOF";
 Start time $start_time_string
