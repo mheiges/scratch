@@ -1,0 +1,73 @@
+#!/usr/bin/perl
+
+use strict;
+use Date::Parse;
+use Date::Format;
+use POSIX;
+
+my $JOB_ID = $ARGV[0];
+
+my $JOB_PATH = '.';
+
+my $LOG = "$JOB_ID.log";
+
+open (LOG, "<$LOG");
+
+my $subtask_size;
+my $cummulative_runtime = 0;
+my $number_tasks_run = 0;
+my $start_time_string;
+
+while (<LOG>) {
+    chomp;
+    if (m/^Subtask set size is \d+ \((\d+) subtasks\)/) {
+        $subtask_size = $1;
+    }
+    
+    if (! $start_time_string && m/^Initializing task on node .+\.\.\.(.+)/) {
+        $start_time_string = $1;
+    }
+
+    if (m/subTask \d+ succeeded...(\d+) seconds/) {
+        $cummulative_runtime += $1;
+        $number_tasks_run++;
+    }
+}
+
+my ($ss,$mm,$hh,$day,$month,$year,$zone) = strptime($start_time_string);
+my $start_time = str2time($start_time_string);
+my $curr_time = time;
+
+my $elapsed_time = ($curr_time - $start_time);
+
+my ($seconds, $minutes, $hours) = ($elapsed_time % 60, int($elapsed_time/60) % 60, int($elapsed_time/3600));;
+
+my $run_time;
+$run_time .= sprintf "%dh",  $hours   if  $hours;
+$run_time .= sprintf " %dm", $minutes if ($minutes or $hours);
+
+my $avg_runtime_minutes = ceil($cummulative_runtime / $number_tasks_run / 60);
+my $number_tasks_remaining = $subtask_size - $number_tasks_run;
+my $projected_seconds_remaining = ($elapsed_time / $number_tasks_run) * $number_tasks_remaining ;
+
+print "($elapsed_time/ $number_tasks_run) * $number_tasks_remaining \n";
+
+my ($seconds, $minutes, $hours) = ($projected_seconds_remaining % 60, int($projected_seconds_remaining/60) % 60, int($projected_seconds_remaining/3600));;
+
+my $projected_time_remaining;
+$projected_time_remaining .= sprintf "%dh",  $hours   if  $hours;
+$projected_time_remaining .= sprintf " %dm", $minutes if ($minutes or $hours);
+
+my $projected_completion_datetime = time2str($curr_time + $projected_time_remaining);
+
+print <<"EOF";
+Start time $start_time_string
+Running for $run_time
+$number_tasks_run of $subtask_size subtasks have completed.
+$number_tasks_remaining tasks remaining.
+Average task runtime is $avg_runtime_minutes minutes.
+
+Expected run time remaining is $projected_time_remaining.
+
+Expected completion time is $projected_completion_datetime
+EOF
