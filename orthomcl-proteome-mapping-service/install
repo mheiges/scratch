@@ -231,6 +231,9 @@ export LSB_DEFAULTPROJECT="810086221_jcklab__10-21-RR374-062"
 if [ -e /etc/profile.d/ge.sh ]; then 
     source /etc/profile.d/ge.sh
 fi
+if [ -e /etc/profile.d/sge.sh ]; then 
+    source /etc/profile.d/sge.sh
+fi
 if [ -e /etc/profile.d/sunge.sh ]; then 
     source /etc/profile.d/sunge.sh
 fi
